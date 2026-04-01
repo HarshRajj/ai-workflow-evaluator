@@ -30,6 +30,13 @@ class WorkflowEvaluation(BaseModel):
     areas_for_improvement: List[str]
 
 
+class SessionComparison(BaseModel):
+    improvement_trajectory: str
+    consistent_strengths: List[str]
+    persistent_issues: List[str]
+    meta_summary: str
+
+
 # ---------------------------------------------------------------------------
 # Turn type
 # ---------------------------------------------------------------------------
@@ -107,6 +114,23 @@ Also produce:
   - areas_for_improvement       : 2–4 specific, actionable improvement points
 """
 
+META_EVAL_PROMPT_TEMPLATE = """\
+Analyze the following sequential workflow evaluations for the same engineer across multiple coding sessions.
+
+<evaluations>
+{evaluations_json}
+</evaluations>
+
+Your goal is to compare these sessions and identify the trajectory of the engineer's workflow.
+Identify what habits improved, what strengths remained consistent, and what areas for improvement persisted.
+
+Provide:
+  - improvement_trajectory: A brief narrative (2-3 sentences) on how their workflow evolved.
+  - consistent_strengths: 2-3 specific strengths displayed across the sessions.
+  - persistent_issues: 2-3 specific weaknesses that appeared in multiple sessions.
+  - meta_summary: A 1-2 sentence final verdict on their overall AI interaction skills.
+"""
+
 
 class WorkflowEvaluator:
     MAX_TRANSCRIPT_CHARS = 80_000  # ~20 k tokens — safe ceiling for gpt-4o context
@@ -149,6 +173,29 @@ class WorkflowEvaluator:
         transcript = self._format_transcript(validated)
         transcript = self._truncate(transcript)
         return self._call_api(transcript)
+
+    def compare_sessions(self, session_results: List[dict]) -> SessionComparison:
+        """
+        Compare multiple session evaluations.
+        Args:
+            session_results: list of dicts describing the sessions
+        """
+        import json
+        evaluations_str = json.dumps(session_results, indent=2)
+        user_prompt = META_EVAL_PROMPT_TEMPLATE.format(evaluations_json=evaluations_str)
+        try:
+            response = self.client.beta.chat.completions.parse(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format=SessionComparison,
+                temperature=0.2,
+            )
+            return response.choices[0].message.parsed
+        except Exception as e:
+            raise RuntimeError(f"OpenAI API error during comparison: {e}")
 
     # ------------------------------------------------------------------
     # Private helpers

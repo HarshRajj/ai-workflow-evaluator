@@ -45,3 +45,9 @@ uv run cli.py data/
 ```
 
 The script will parse the conversation, evaluate the engineering workflow quality, and print a formatted summary report to your terminal!
+
+**✨ Bonus Feature: Multi-Session Meta-Evaluation**
+If you pass a folder containing multiple transcript files, the script will automatically aggregate all evaluations and run a final meta-analysis. This compares the engineer's sessions over time to generate a trajectory report outlining:
+- Overall workflow improvement
+- Consistent engineering strengths
+- Persistent issues that appear in multiple sessions

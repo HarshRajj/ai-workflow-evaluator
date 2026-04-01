@@ -94,6 +94,8 @@ def main():
         
     console.print(f"[bold cyan]🔍 Found {len(files_to_process)} transcript(s) to evaluate...[/]")
     
+    session_history = []
+    
     for file in files_to_process:
         try:
             with console.status(f"[bold green]Parsing & Evaluating '{file.name}' via LLM...[/]", spinner="dots"):
@@ -106,8 +108,43 @@ def main():
                 
             print_evaluation(result, file.name)
             
+            session_history.append({
+                "session_name": file.name,
+                "overall_score": result.overall_effectiveness_score,
+                "summary": result.qualitative_summary,
+                "strengths": result.key_strengths,
+                "improvements": result.areas_for_improvement
+            })
+            
         except Exception as e:
             console.print(f"[bold red]❌ Error evaluating {file.name}: {str(e)}[/]")
+
+    if len(session_history) > 1:
+        console.print("\n[bold title]🌐 Performing Multi-Session Meta-Evaluation...[/]")
+        try:
+            with console.status("[bold green]Comparing transcripts via LLM...[/]", spinner="dots"):
+                comparison = evaluator.compare_sessions(session_history)
+            
+            console.print("\n[bold title]🏆 Transcript Comparison Report[/]")
+            console.print("="*60)
+            
+            console.print(Panel(comparison.meta_summary, title="🧠 Meta Summary", border_style="magenta"))
+            
+            console.print("\n[bold]📈 Improvement Trajectory:[/]")
+            console.print(f"  {comparison.improvement_trajectory}")
+            
+            console.print("\n[bold green]🌟 Consistent Strengths:[/]")
+            for strength in comparison.consistent_strengths:
+                console.print(f"  [green]✔ {strength}[/]")
+                
+            console.print("\n[bold red]⚠ Persistent Issues:[/]")
+            for issue in comparison.persistent_issues:
+                console.print(f"  [red]⚠ {issue}[/]")
+                
+            console.print("="*60)
+            
+        except Exception as e:
+            console.print(f"[bold red]❌ Error comparing sessions: {str(e)}[/]")
 
 if __name__ == "__main__":
     main()
