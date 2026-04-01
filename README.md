@@ -20,9 +20,20 @@ The script leverages OpenAI's `gpt-4o-mini` with Pydantic structured outputs for
 1. **Install [`uv`](https://docs.astral.sh/uv/)** (the fast Python package manager, if you don't have it already).
 2. **Set up your API Key:**
    Copy `.env.example` to `.env` and add your OpenAI Key.
+
    ```bash
    cp .env.example .env
    # Add your key -> OPENAI_API_KEY=sk-...
+
+   ```
+
+3. add the transcripts to the `data` folder
+
+   ```
+   data/
+   ├── transcript1.md
+   ├── transcript2.md
+   └── ...
    ```
 
 ## Usage
